@@ -3,11 +3,6 @@ from django.http import HttpResponse
 import json
 import pymongo
 
-# TODO: giriş yap ve kaydol fonksiyonlarını düzgünce geliştir
-# TODO: kaydol fonksiyonu username ve email kontrolü yapacak
-# TODO: kayıt olma veya giriş yapma başarılı olduğunda userid döndüreceğiz
-# TODO: ilerleyen zamanlarda userid yerine token kontrolü yapılabilir
-
 def bodyToJson(reqBody):
   bodyJson = {}
   for param in reqBody.split('&'):
@@ -26,11 +21,13 @@ def signup(request):
   if not usersCol.count({ '$or': [{'username': userJson['username']}, {'email': userJson['email']}]}) == 0:
     print('Already exist')
     myclient.close()
-    return HttpResponse('Username or email already taken', status=409)
+    resJson = json.dumps({'msg': 'Username or email already taken'}, indent = 4)
+    return HttpResponse(resJson, content_type="application/json", status=409)
   else:
     newUser = usersCol.insert(userJson)
     myclient.close()
-    response = HttpResponse("Sign Up Succesful", status=200)
+    resJson = json.dumps({'msg': 'Sign Up Succesful', 'id': str(cursor[0]['_id'])}, indent = 4)
+    response = HttpResponse(resJson, content_type="application/json", status=200)
     response.set_cookie('id', str(newUser))
     return response
 
@@ -38,15 +35,16 @@ def signup(request):
 def login(request):
   req_body = request.body.decode('utf-8')
   userJson = bodyToJson(req_body)
-
   myclient = pymongo.MongoClient('mongodb://localhost:27017/')
   mydb = myclient['moviedb']
   usersCol = mydb['users']
 
   cursor = list(usersCol.find({ '$and': [{'username': userJson['username']}, {'password': userJson['password']}]}, {'_id':1}))
   if not cursor:
-    return HttpResponse('Invalid username or password', status=401)
+    resJson = json.dumps({'msg': 'Invalid username or password'}, indent = 4)
+    return HttpResponse(resJson, content_type="application/json", status=401)
   else:
-    response = HttpResponse('Login Successful', status=200)
+    resJson = json.dumps({'msg': 'Login Successful', 'id': str(cursor[0]['_id'])})
+    response = HttpResponse(resJson, content_type="application/json", status=200)
     response.set_cookie('id', str(cursor[0]['_id'])) 
-    return response
+    return response  
