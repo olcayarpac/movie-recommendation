@@ -3,6 +3,9 @@ from django.http import HttpResponse
 import json
 import pymongo
 
+
+# HQQ-SZAS2R-NETT27
+
 def bodyToJson(reqBody):
   bodyJson = {}
   for param in reqBody.split('&'):
@@ -47,4 +50,4 @@ def login(request):
     resJson = json.dumps({'msg': 'Login Successful', 'id': str(cursor[0]['_id'])})
     response = HttpResponse(resJson, content_type="application/json", status=200)
     response.set_cookie('id', str(cursor[0]['_id'])) 
-    return response  
+    return respons-
