@@ -6,5 +6,7 @@ urlpatterns = [
     path('signup', views.signup, name='singup'),
     path('login', views.login, name='login'),
     path('searchTitle', views.searchByTitle, name='searchTitle'),
+    path('likeMovie', views.likeMovie, name='likeMovie'),
+    path('getMovieDetails', views.getMovieDetails, name='getMovieDetails'),
     path('getRecommendationsByUserLikes', views.getRecommendationsByUserLikes, name='getRecommendationsByUserLikes')
 ]
