@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
+import random
 
 from bs4 import BeautifulSoup
 import urllib.request as urllib
@@ -78,7 +79,7 @@ def searchByTitle(request):
 # GET
 # get recommendations based on the other user likes
 def getRecommendationsByUserLikes(request):
-    ttid = request.GET['movieid']
+    ttid = int(request.GET['movieid'])
     responseList = []
     movies = pd.read_csv(os.path.join(BASE, "moviesFinal.csv"))
 
@@ -127,6 +128,26 @@ def likeMovie(request):
 
     return HttpResponse(status=200)
 
+
+# GET
+def getLikedMovieRandom(request):
+    userid = request.GET['userid']
+    myclient = pymongo.MongoClient('mongodb://localhost:27017/')
+    mydb = myclient['moviedb']
+    usersCol = mydb['users']
+
+    likedMovies = mydb['users'].find(
+        {'_id': ObjectId(userid)}, 
+        {'_id':0, 'starredMovies':1, 'starredMovies':{'$filter': { 'input': '$starredMovies', 'as': 'mov', 'cond': {'$gt': ['$$mov.star', 3]}}}})
+    
+
+    likedMovies = list(likedMovies[0]['starredMovies'])
+    likedMovies = random.choice(likedMovies)
+    asJson = json.dumps(likedMovies)
+    return HttpResponse(asJson, content_type='application/json', status=200)
+
+
+
 # GET
 def getMovieDetails(request):
     ttid = request.GET['movieid']
@@ -140,7 +161,7 @@ def getMovieDetails(request):
     movieCursor = mydb['movies'].find({'_id': int(ttid)})[0]
     #starCursor = mydb['users'].find(
     #    {'_id': ObjectId(uid)}, 
-    #    {'_id':0, 'starredMovies':1, 'starredMovies':{'$elemMatch':{'$eq': {'movieid': int(ttid), 'star': 5}}}})
+    #    {'_id':0, 'starredMovies':1, 'starredMovies':{'$elemMatch':{':$eq' {'movieid': int(ttid), 'star': 5}}}})
     
 
     starCursor = mydb['users'].find(

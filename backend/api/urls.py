@@ -7,6 +7,7 @@ urlpatterns = [
     path('login', views.login, name='login'),
     path('searchTitle', views.searchByTitle, name='searchTitle'),
     path('likeMovie', views.likeMovie, name='likeMovie'),
+    path('getLikedMovieRandom', views.getLikedMovieRandom, name='getLikedMovieRandom'),
     path('getMovieDetails', views.getMovieDetails, name='getMovieDetails'),
     path('getName', views.getName, name='getName'),
     path('getRecommendationsByUserLikes', views.getRecommendationsByUserLikes, name='getRecommendationsByUserLikes')
