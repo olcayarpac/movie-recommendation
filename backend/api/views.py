@@ -80,9 +80,11 @@ def searchByTitle(request):
 def getRecommendationsByUserLikes(request):
     ttid = request.GET['movieid']
     responseList = []
-    for movieid in get_movie_recommendation(ttid):
-        responseList.append(
-            {'movieid': movieid, 'posterurl': getImgUrl(movieid)})
+    movies = pd.read_csv(os.path.join(BASE, "moviesFinal.csv"))
+
+    for movieid in get_movie_recommendation(ttid, movies):
+        url = movies[movies['imdb_title_id']== movieid]['poster_url'].values[0]
+        responseList.append({'movieid': movieid, 'poster_url':url})
 
     asJson = json.dumps(responseList)
     return HttpResponse(asJson, content_type='application/json', status=200)
@@ -92,7 +94,6 @@ def getRecommendationsByUserLikes(request):
 # star a movie and add it into starred movies field of user in database
 # params: userid, movieid, star
 def likeMovie(request):
-    print(request.body)
     req_body = request.body.decode('utf-8')
     reqJson = bodyToJson(req_body)
     myclient = pymongo.MongoClient('mongodb://localhost:27017/')
@@ -156,34 +157,49 @@ def getMovieDetails(request):
     asJson = json.dumps(movieCursor)
     return HttpResponse(asJson, content_type='application/json', status=200)
 
+def getName(request):
+    ttid = int(request.GET['movieid'])
 
-def get_movie_recommendation(movieId):
+    myclient = pymongo.MongoClient('mongodb://localhost:27017/')
+    mydb = myclient['moviedb']
+    moviesCol = mydb['movies']
+
+    cursor = moviesCol.find({'_id': ttid},{'_id':0, 'title':1})
+    myclient.close()
+
+    if cursor:
+        asJson = json.dumps(cursor[0])
+        return HttpResponse(asJson, content_type='application/json', status=200)
+    
+
+def get_movie_recommendation(movieId, movies):
     movieId = (int(movieId))
-    movies = pd.read_csv(os.path.join(BASE, "moviesFinal.csv"))
     ratings = pd.read_csv(os.path.join(BASE, "ratingsUp.csv"))
 
-    final_dataset = ratings.pivot(
+    ratingsMatrix = ratings.pivot(
         index='movieId', columns='userId', values='rating')
-    final_dataset.fillna(0, inplace=True)
-    csr_data = csr_matrix(final_dataset.values)
-    final_dataset.reset_index(inplace=True)
+    ratingsMatrix.fillna(0, inplace=True)
+    csr_data = csr_matrix(ratingsMatrix.values)
+    ratingsMatrix.reset_index(inplace=True)
 
     knn = NearestNeighbors(
         metric='cosine', algorithm='brute', n_neighbors=20, n_jobs=-1)
     knn.fit(csr_data)
 
-    n_movies_to_reccomend = 5
-
-    movie_idx = final_dataset[final_dataset['movieId'] == movieId].index[0]
-    distances, indices = knn.kneighbors(
-        csr_data[movie_idx], n_neighbors=n_movies_to_reccomend+1)
-    rec_movie_indices = sorted(list(zip(indices.squeeze().tolist(
-    ), distances.squeeze().tolist())), key=lambda x: x[1])[:0:-1]
+    n_movies_to_reccomend = 5    
+      
+    movie_idx = ratingsMatrix[ratingsMatrix['movieId'] == movieId].index[0]
+        
+    distances , indices = knn.kneighbors(csr_data[movie_idx],n_neighbors=n_movies_to_reccomend+1)
+    
+    rec_movie_indices = sorted(list(zip(indices.squeeze().tolist(),distances.squeeze().tolist())),key=lambda x: x[1])[:0:-1]
+    
     recommend_frame = []
-
     for index, val in rec_movie_indices:
-        movie = movies.iloc[index]
-        recommend_frame.append({'movieid': int(movie['imdb_title_id'][2:]), 'posterurl':movie['poster_url']})
+        movie_id = ratingsMatrix.iloc[index]['movieId']
+        recommend_frame.append(int(movie_id))
+        idx = movies[movies['imdb_title_id'] == movie_idx]
+            
     return recommend_frame
 
 
