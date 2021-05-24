@@ -10,5 +10,6 @@ urlpatterns = [
     path('getLikedMovieRandom', views.getLikedMovieRandom, name='getLikedMovieRandom'),
     path('getMovieDetails', views.getMovieDetails, name='getMovieDetails'),
     path('getName', views.getName, name='getName'),
-    path('getRecommendationsByUserLikes', views.getRecommendationsByUserLikes, name='getRecommendationsByUserLikes')
+    path('getRecommendationsByUserLikes', views.getRecommendationsByUserLikes, name='getRecommendationsByUserLikes'),
+    path('getDescriptionRecommendation', views.getDescriptionRecommendation, name='getDescriptionRecommendation')
 ]

@@ -16,9 +16,6 @@ import urllib.request as urllib
 import os.path
 BASE = os.path.dirname(os.path.abspath(__file__))
 
-
-
-
 # POST
 def signup(request):
     req_body = request.body.decode('utf-8')
@@ -232,3 +229,35 @@ def bodyToJson(reqBody):
         print(keyVal)
         bodyJson[keyVal[0]] = keyVal[1]
     return bodyJson
+
+
+def getDescriptionRecommendation(request):
+
+    movieId = int(request.GET['movieid'])
+
+    pd.read_csv(os.path.join(BASE, "ratingsUp.csv"))
+    movies = pd.read_csv(os.path.join(BASE, "withPosterUrl.csv"))
+    descriptionSimilarity = pd.read_csv(os.path.join(BASE, "descriptionSim.csv"))
+
+
+    mov = descriptionSimilarity[descriptionSimilarity['imdb_title_id'] == int(movieId)]
+
+    sim_scores = []
+    for i in range(1,6):
+        sim_scores.append(mov[str(i)].values)
+    
+    #idx = indices[movieId]
+    #sim_scores = list(enumerate(cosine_sim[idx]))
+    #sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[0:30]
+    
+    sim_scores = [i[0] for i in sim_scores]
+    movie_ids = []
+    for score in sim_scores:
+        movie_ids.append(
+            {
+                'movieid': str(movies.iloc[int(float(score[1:-1].split(' ')[0]))]['imdb_title_id']),
+                'poster_url': str(movies.iloc[int(float(score[1:-1].split(' ')[0]))]['poster_url'])
+            })
+
+    asJson = json.dumps(movie_ids)
+    return HttpResponse(asJson, content_type='application/json', status=200)
